@@ -1,0 +1,21 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: octosplay-member-issuer
+  namespace: member
+  labels:
+    octos-play: member-issuer
+spec:
+  acme:
+    email: cs@octosplay.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: octosplay-screet
+    solvers:
+      # Use the HTTP-01 challenge provider
+      - http01:
+          ingress:
+            class: nginx
+
+
+    

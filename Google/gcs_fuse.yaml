@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcsfuse-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gcsfuse-test
+  template:
+    metadata:
+      labels:
+        app: gcsfuse-test
+    spec:
+      containers:
+        - name: gcsfuse-test
+          image: gcr.io/some-repo/gcs-fuse:latest
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+          lifecycle:
+            postStart:
+              exec:
+                command: ["gcsfuse", "-o", "nonempty", "kinostorage", "/mnt/some-bucket"]
+            preStop:
+              exec:
+                command: ["fusermount", "-u", "/mnt/kinostorage"]

@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mongodbdaemon
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cephfs-pvc
+  namespace: mongodbdaemon
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: rook-cephfs
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-registry
+  namespace: mongodbdaemon
+  labels:
+    k8s-app: mongodbdaemon
+    kubernetes.io/cluster-service: "true"
+spec:
+  selector:
+    matchLabels:
+      k8s-app: mongodbdaemon
+  template:
+    metadata:
+      labels:
+        k8s-app: mongodbdaemon
+        kubernetes.io/cluster-service: "true"
+    spec:
+      containers:
+      - name: mongodbdaemon
+        image: amd64/mongo
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: "zukino"
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: "Zuk1n0"
+        volumeMounts:
+        - name: image-store
+          mountPath: /data/db
+        ports:
+        - containerPort: 27017
+      volumes:
+      - name: image-store
+        persistentVolumeClaim:
+          claimName: cephfs-pvc
+          readOnly: false

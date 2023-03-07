@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: octosplay-apps-ingress
+  namespace: default
+  annotations:
+   cert-manager.io/issuer: octosplay-apps-issuer
+spec:
+  tls:
+   - hosts:
+     - apps.octosplay.com
+     secretName: letsencrypt-nginx-octosapps
+  rules:
+    - host: apps.octosplay.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: apache2apps
+                port:
+                  number: 80
+  ingressClassName: nginx

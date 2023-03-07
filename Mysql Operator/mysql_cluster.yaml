@@ -1,0 +1,20 @@
+apiVersion: mysql.oracle.com/v2
+kind: InnoDBCluster
+metadata:
+  name: mycluster
+  namespace: mysql-operator
+spec:
+  secretName: mypwds
+  tlsUseSelfSigned: true
+  instances: 2
+  version: 8.0.31
+  router:
+    instances: 1
+    version: 8.0.31
+  datadirVolumeClaimTemplate:
+    accessModes: 
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 2Gi
+    storageClassName: rook-ceph-block

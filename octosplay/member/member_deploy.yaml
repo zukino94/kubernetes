@@ -1,0 +1,64 @@
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJyZWdpc3RyeS5naXRsYWIuY29tIjp7InVzZXJuYW1lIjoiZ2xwYXQtU3J6eWtMMlBSeG0zeEJ5UWp0LTUiLCJwYXNzd29yZCI6ImdscGF0LVNyenlrTDJQUnhtM3hCeVFqdC01IiwiYXV0aCI6IloyeHdZWFF0VTNKNmVXdE1NbEJTZUcwemVFSjVVV3AwTFRVNloyeHdZWFF0VTNKNmVXdE1NbEJTZUcwemVFSjVVV3AwTFRVPSJ9fX0=
+kind: Secret
+metadata:
+  name: regcred
+  namespace: member
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octosplaymember
+  namespace: member
+  labels:
+    octos-play: member
+  annotations:
+    app-version: aplikasi ini di build dengan image versi satu
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      octosplay-replica: member
+  template:
+    metadata:
+      name: pod-member
+      labels:
+        octosplay-replica: member
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: octosplaymember
+        image: registry.gitlab.com/octosplay/zukino:member1
+        env:
+        - name: APP_NAME
+          value: "Octosplay"
+        - name: APP_ENV
+          value: "production"
+        - name: APP_KEY
+          value: "base64:XVb0v4IcNSNFvNsrrZTexyz60/p9N7EIjbm2Qi8ia/I="
+        - name: APP_DEBUG
+          value: "true"
+        - name: APP_URL
+          value: "https://member.octosplay.com"
+        - name: API_URL
+          value: "https://apps.octosplay.com/api"
+        - name: REDIS_URL
+          value: "rediss://default:AVNS_N78vpi9F8eAwcXz2utR@testing-redis-do-user-6322205-0.b.db.ondigitalocean.com:25061?database=0"
+        - name: REDIS_CACHE
+          value: "rediss://default:AVNS_N78vpi9F8eAwcXz2utR@testing-redis-do-user-6322205-0.b.db.ondigitalocean.com:25061?database=1"
+        - name: EXPIRED_TIME_MINUTE
+          value: "5000"
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /api/ping
+            port: 80
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          failureThreshold: 3
+          successThreshold: 1
+          timeoutSeconds: 1

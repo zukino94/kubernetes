@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mongodb
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodbstorageclaim
+  namespace: mongodb
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi
+  storageClassName: rook-cephfs
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodbdeploy
+  namespace: mongodb
+  labels:
+    name: mongodbdeploy
+spec:
+  #serviceName: mongodb-service
+  #replicas: 3
+  selector:
+    matchLabels:
+      pod: mongodb
+  #template for create new pod
+  template:
+    metadata:
+      name: pod-mongodb
+      labels:
+        pod: mongodb
+    #container spesification
+    spec:
+      containers:
+        - name: octosplaymongodb
+          image: mongo
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: "zukino"
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: "Zuk1n0"
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - mountPath: /data/db
+              name: mongovolume
+      volumes:
+        - name: mongovolume
+          persistentVolumeClaim:
+            claimName: mongodbstorageclaim
+            readOnly: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodbserver
+  namespace: mongodb
+  labels:
+    octosplay: mongodbservice
+spec:
+  #type: LoadBalancer
+  selector:
+    pod: mongodb
+  ports:
+  #port yang digunakan service
+  - port: 27017
+    #target port container
+    targetPort: 27017
