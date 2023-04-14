@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-credentials
+  namespace: traefik
+
+type: Opaque
+stringData:
+  email: Strixseo@gmail.com
+  apiKey: s7YjPj96PH1nJj2R2gJL-rEE2Irp1SwTm81a4Q56

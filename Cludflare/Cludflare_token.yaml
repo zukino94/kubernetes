@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token-secret
+type: Opaque
+stringData:
+  api-token: s7YjPj96PH1nJj2R2gJL-rEE2Irp1SwTm81a4Q56

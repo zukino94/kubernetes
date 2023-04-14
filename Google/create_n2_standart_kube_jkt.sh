@@ -1,0 +1,1 @@
+gcloud compute instances create worker-2 --async --boot-disk-size 20GB --can-ip-forward --image-family ubuntu-1804-lts --image-project ubuntu-os-cloud --machine-type n2-highcpu-2 --private-network-ip 10.240.0.22 --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring --subnet k8s-nodes --zone asia-southeast2-a --tags example-k8s,worker

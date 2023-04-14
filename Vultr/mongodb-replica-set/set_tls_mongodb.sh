@@ -1,0 +1,2 @@
+kubectl create configmap ca-config-map --from-file=ca.crt=C:\Users\zukin\AppData\Local\mkcert\rootCA.pem --namespace mongodb
+kubectl create secret tls ca-key-pair  --cert=C:\Users\zukin\AppData\Local\mkcert\rootCA.pem --key=C:\Users\zukin\AppData\Local\mkcert\rootCA-key.pem --namespace mongodb

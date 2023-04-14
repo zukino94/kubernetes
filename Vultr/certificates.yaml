@@ -10,16 +10,16 @@ metadata:
 
 spec:
 
-  secretName: octosplay.com-tls
+  secretName: api.octosplay.com-tls
 
   issuerRef:
 
-    name: letsencrypt-prod
+    name: octosplay-api-issuer
 
     kind: ClusterIssuer
 
-  commonName: "*.octosplay.com"
+  commonName: api.octosplay.com
 
   dnsNames:
 
-  - "*.octosplay.com"
+  - api.octosplay.com

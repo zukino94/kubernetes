@@ -1,0 +1,166 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: udangbet
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJyZWdpc3RyeS5naXRsYWIuY29tIjp7InVzZXJuYW1lIjoiZ2xwYXQtdnJ0cGRMVG14ZmlMeld5c2VmXzciLCJwYXNzd29yZCI6ImdscGF0LXZydHBkTFRteGZpTHpXeXNlZl83IiwiZW1haWwiOiJ6dWtpbm9zdWtpbm9AZ21haWwuY29tIiwiYXV0aCI6IloyeHdZWFF0ZG5KMGNHUk1WRzE0Wm1sTWVsZDVjMlZtWHpjNloyeHdZWFF0ZG5KMGNHUk1WRzE0Wm1sTWVsZDVjMlZtWHpjPSJ9fX0=
+kind: Secret
+metadata:
+  name: regcred
+  namespace: udangbet
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: udangbetmember
+  namespace: udangbet
+  labels:
+    udangbet: member
+  annotations:
+    app-version: aplikasi ini di build dengan image versi satu
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      udangbet-replica: member
+  template:
+    metadata:
+      name: udangbet-pod
+      labels:
+        udangbet-replica: member
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: octosplaymember
+        image: registry.gitlab.com/octosplay/zukino:udangbetfpmlast
+        env:
+        - name: APP_NAME
+          value: "Udangbet"
+        - name: APP_ENV
+          value: "local"
+        - name: APP_KEY
+          value: "base64:XVb0v4IcNSNFvNsrrZTexyz60/p9N7EIjbm2Qi8ia/I="
+        - name: APP_DEBUG
+          value: "true"
+        - name: WEB_ICON
+          value: "https://i.ibb.co/GRQCSD2/udangbet-trans.png"
+        - name: WEB_LOGO
+          value: "https://i.ibb.co/3YsRmJh/udangbet-logo.png"
+        - name: APP_URL
+          value: "https://udangbet.com"
+        - name: API_URL
+          value: "server.octosplay.com/api"
+        - name: GAME_URL
+          value: "https://api.octosplay.com"
+        # Redis Config
+        - name: REDIS_HOST
+          value: "octosplay-redis-do-user-13616716-0.b.db.ondigitalocean.com"
+        - name: REDIS_PASSWORD
+          value: "AVNS_q9tt1TgyF5K9eGJTbAE"
+        - name: REDIS_PORT
+          value: "25061"
+        # Expired Token Time
+        - name: EXPIRED_TIME_MINUTE
+          value: "5000"
+        ports:
+        - containerPort: 9000
+        livenessProbe:
+            exec:
+                command:
+                    - php-fpm-healthcheck
+                    - --listen-queue=10
+                    - --accepted-conn=5000
+            initialDelaySeconds: 0
+            periodSeconds: 10
+        readinessProbe:
+            exec:
+                command:
+                    - php-fpm-healthcheck
+            initialDelaySeconds: 1
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpfpm-udangbet
+  namespace: udangbet
+  labels:
+    member: service-udangbet
+spec:
+  selector:
+    udangbet-replica: member
+  ports:
+  - port: 9000
+    targetPort: 9000
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: udangbet-prod
+  namespace: udangbet
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: cs1@octosplay.com
+    privateKeySecretRef:
+      name: udangbet-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: udangbet.com
+  namespace: udangbet
+spec:
+  secretName: udangbet.com-tls
+  issuerRef:
+    name: udangbet-prod
+    kind: ClusterIssuer
+  commonName: udangbet.com
+  dnsNames:
+  - udangbet.com
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: serverconfig
+  namespace: udangbet
+data:
+  SCRIPT_FILENAME: "/var/www/html/public/index.php"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+#    cert-manager.io/cluster-issuer: udangbet-prod
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: "FCGI"
+    nginx.ingress.kubernetes.io/fastcgi-index: "index.php"
+    nginx.ingress.kubernetes.io/fastcgi-params-configmap: "serverconfig"
+  name: udangbet-ingress
+  namespace: udangbet
+spec:
+  rules:
+  - host: udangbet.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: phpfpm-udangbet
+            port:
+              number: 9000
+        path: /
+        pathType: Prefix
+#  tls:
+#  - hosts:
+#    - udangbet.com
+#    secretName: udangbet.com-tls
+status:
+  loadBalancer: {}

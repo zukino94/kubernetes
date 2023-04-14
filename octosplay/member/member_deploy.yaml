@@ -1,4 +1,9 @@
 apiVersion: v1
+kind: Namespace
+metadata:
+  name: member
+---
+apiVersion: v1
 data:
   .dockerconfigjson: eyJhdXRocyI6eyJyZWdpc3RyeS5naXRsYWIuY29tIjp7InVzZXJuYW1lIjoiZ2xwYXQtU3J6eWtMMlBSeG0zeEJ5UWp0LTUiLCJwYXNzd29yZCI6ImdscGF0LVNyenlrTDJQUnhtM3hCeVFqdC01IiwiYXV0aCI6IloyeHdZWFF0VTNKNmVXdE1NbEJTZUcwemVFSjVVV3AwTFRVNloyeHdZWFF0VTNKNmVXdE1NbEJTZUcwemVFSjVVV3AwTFRVPSJ9fX0=
 kind: Secret
@@ -31,7 +36,7 @@ spec:
       - name: regcred
       containers:
       - name: octosplaymember
-        image: registry.gitlab.com/octosplay/zukino:member1
+        image: registry.gitlab.com/octosplay/zukino:udangbet
         env:
         - name: APP_NAME
           value: "Octosplay"
@@ -45,6 +50,8 @@ spec:
           value: "https://member.octosplay.com"
         - name: API_URL
           value: "https://apps.octosplay.com/api"
+        - name: GAME_URL
+          value: "https://api.octosplay.com/api"
         - name: REDIS_URL
           value: "rediss://default:AVNS_N78vpi9F8eAwcXz2utR@testing-redis-do-user-6322205-0.b.db.ondigitalocean.com:25061?database=0"
         - name: REDIS_CACHE
@@ -62,3 +69,74 @@ spec:
           failureThreshold: 3
           successThreshold: 1
           timeoutSeconds: 1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpfpm-member
+  namespace: member
+  labels:
+    octos-play: phpfpm-member
+spec:
+  selector:
+    octosplay-replica: member
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: member-prod
+  namespace: member
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: hernandessukino94@gmail.com
+    privateKeySecretRef:
+      name: member-prod
+    solvers:
+    - http01:
+        ingress:
+          class: traefik
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: octosplay.com
+  namespace: member
+spec:
+  secretName: udangbet.com-tls
+  issuerRef:
+    name: member-prod
+    kind: ClusterIssuer
+  commonName: udangbet.com
+  dnsNames:
+  - udangbet.com
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: member-prod
+    kubernetes.io/ingress.class: traefik
+  name: member-ingress
+  namespace: member
+spec:
+  rules:
+  - host: udangbet.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: phpfpm-member
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - udangbet.com
+    secretName: udangbet.com-tls
+status:
+  loadBalancer: {}

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: C:\Kubernetes\kompose.exe convert
+    kompose.version: 1.28.0 (c4137012e)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: myapp
+  name: myapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: myapp
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: C:\Kubernetes\kompose.exe convert
+        kompose.version: 1.28.0 (c4137012e)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/laravel-default: "true"
+        io.kompose.service: myapp
+    spec:
+      containers:
+        - env:
+            - name: DB_DATABASE
+              value: bitnami_myapp
+            - name: DB_HOST
+              value: mariadb
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USERNAME
+              value: bn_myapp
+          image: docker.io/bitnami/laravel:10
+          name: myapp
+          ports:
+            - containerPort: 8000
+          resources: {}
+          volumeMounts:
+            - mountPath: /app
+              name: myapp-claim0
+      restartPolicy: Always
+      volumes:
+        - name: myapp-claim0
+          persistentVolumeClaim:
+            claimName: myapp-claim0
+status: {}

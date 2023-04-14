@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: api
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJyZWdpc3RyeS5naXRsYWIuY29tIjp7InVzZXJuYW1lIjoiZ2xwYXQtdnJ0cGRMVG14ZmlMeld5c2VmXzciLCJwYXNzd29yZCI6ImdscGF0LXZydHBkTFRteGZpTHpXeXNlZl83IiwiZW1haWwiOiJ6dWtpbm9zdWtpbm9AZ21haWwuY29tIiwiYXV0aCI6IloyeHdZWFF0ZG5KMGNHUk1WRzE0Wm1sTWVsZDVjMlZtWHpjNloyeHdZWFF0ZG5KMGNHUk1WRzE0Wm1sTWVsZDVjMlZtWHpjPSJ9fX0=
+kind: Secret
+metadata:
+  name: regcred
+  namespace: api
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octosplayapi
+  namespace: api
+  labels:
+    octos-play: api
+  annotations:
+    app-version: aplikasi ini di build dengan image versi satu
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      octosplay-replica: api
+  template:
+    metadata:
+      name: pod-api
+      labels:
+        octosplay-replica: api
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: octosplayapi
+        image: registry.gitlab.com/octosplay/api:1.0.1
+        env:
+        - name: APP_NAME
+          value: "Laravel"
+        - name: APP_ENV
+          value: "production"
+        - name: APP_KEY
+          value: "base64:123456789101245q1vW4fCfzjFZyR5w8cwG5clMHZ1s="
+        - name: APP_DEBUG
+          value: "false"
+        - name: APP_TIMEZONE
+          value: "Asia/Jakarta"
+        - name: APP_URL
+          value: "https://api.octosplay.com"
+        #mysql env
+        - name: DB_MEM_HOST
+          value: "octosplay-mysql-do-user-13616716-0.b.db.ondigitalocean.com"
+        - name: DB_MEM_PORT
+          value: "25060"
+        - name: DB_MEM_DATABASE
+          value: "octosplay_client"
+        - name: DB_MEM_USERNAME
+          value: "octosplay"
+        - name: DB_MEM_PASSWORD
+          value: "AVNS_Vvd0cVgwap17PuWWlwb"
+        - name: DB_MAS_HOST
+          value: "octosplay-mysql-do-user-13616716-0.b.db.ondigitalocean.com"
+        - name: DB_MAS_PORT
+          value: "25060"
+        - name: DB_MAS_DATABASE
+          value: "octosplay_master"
+        - name: DB_MAS_USERNAME
+          value: "octosplay"
+        - name: DB_MAS_PASSWORD
+          value: "AVNS_Vvd0cVgwap17PuWWlwb"
+        #mongodb env
+        - name: MONGO_CP_URL
+          value: "mongodb+srv://octosplay:B0C4jPauf6d21357@octosplay-mongodb-e0460298.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=octosplay-mongodb"
+        - name: MONGO_CP_DBN
+          value: "27017"
+        - name: MONGO_LOG_URL
+          value: "mongodb+srv://octosplay:B0C4jPauf6d21357@octosplay-mongodb-e0460298.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=octosplay-mongodb"
+        - name: MONGO_TRX_URL
+          value: "mongodb+srv://octosplay:B0C4jPauf6d21357@octosplay-mongodb-e0460298.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=octosplay-mongodb"
+        - name: MONGO_TRX_DBN
+          value: "transaction_db"
+        - name: MONGO_LOG_DBN
+          value: "logging_db"
+        - name: MONGO_GAME_DBN
+          value: "game_db"
+        #568win api
+        - name: WIN_COMPANYKEY
+          value: "55EB480D3E104E72BD27220263DA61CF"
+        - name: WIN_API
+          value: "https://ex-api-yy2.ttbbyyllyy.com"
+        - name: WIN_SERVERID
+          value: "octosplay"
+        - name: WIN_RATIO
+          value: "1000"
+        # Firewall Application
+        - name: FIREWALL_STATUS
+          value: "true"
+        - name: WHITE_LIST
+          value: "45.76.188.6,127.0.0.1,103.60.252.203,103.60.252.204,103.60.252.250,103.60.253.203,103.60.253.205,103.60.253.249,103.60.254.250,34.80.251.105,43.198.1.150,52.194.35.1,13.208.136.250,122.146.58.49,61.220.125.7,61.220.125.8,111.235.225.61,111.235.225.62,125.227.48.247,125.227.48.248,103.130.140.170,163.47.15.15,103.60.253.249"
+        - name: WEB_ALLOWED
+          value: "udangbet.com"
+        ports:
+        - containerPort: 9000
+        readinessProbe:
+            exec:
+                command:
+                    - php-fpm-healthcheck
+            initialDelaySeconds: 1
+            periodSeconds: 5
+        livenessProbe:
+            exec:
+                command:
+                    - php-fpm-healthcheck
+                    - --listen-queue=10
+                    - --accepted-conn=5000
+            initialDelaySeconds: 0
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpfpm-api
+  namespace: api
+  labels:
+    octos-play: phpfpm-api
+spec:
+  ports:
+  - port: 9000
+    targetPort: 9000
+  selector:
+    octosplay-replica: api
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: serverconfig
+  namespace: api
+data:
+  SCRIPT_FILENAME: "/var/www/html/public/index.php"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: "FCGI"
+    nginx.ingress.kubernetes.io/fastcgi-index: "index.php"
+    nginx.ingress.kubernetes.io/fastcgi-params-configmap: "serverconfig"
+  name: api-ingress
+  namespace: api
+spec:
+  rules:
+  - host: api.octosplay.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: phpfpm-api
+            port:
+              number: 9000
+        path: /
+        pathType: Prefix
+status:
+  loadBalancer: {}

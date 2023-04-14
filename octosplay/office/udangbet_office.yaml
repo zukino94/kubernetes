@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: udangbetbo
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJyZWdpc3RyeS5naXRsYWIuY29tIjp7InVzZXJuYW1lIjoiZ2xwYXQtdnJ0cGRMVG14ZmlMeld5c2VmXzciLCJwYXNzd29yZCI6ImdscGF0LXZydHBkTFRteGZpTHpXeXNlZl83IiwiZW1haWwiOiJ6dWtpbm9zdWtpbm9AZ21haWwuY29tIiwiYXV0aCI6IloyeHdZWFF0ZG5KMGNHUk1WRzE0Wm1sTWVsZDVjMlZtWHpjNloyeHdZWFF0ZG5KMGNHUk1WRzE0Wm1sTWVsZDVjMlZtWHpjPSJ9fX0=
+kind: Secret
+metadata:
+  name: regcred
+  namespace: udangbetbo
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: udangbetbackoffice
+  namespace: udangbetbo
+  labels:
+    udangbet: office
+  annotations:
+    app-version: aplikasi ini di build dengan image versi satu
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      office-replica: udangbet
+  template:
+    metadata:
+      name: office-pod
+      labels:
+        office-replica: udangbet
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: octosplaymember
+        image: registry.gitlab.com/octosplay/backoffice:1.0.0
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: office-udangbet
+  namespace: udangbetbo
+  labels:
+    udangbet: office-udangbet
+spec:
+  selector:
+    office-replica: udangbet
+  ports:
+  - port: 3000
+    targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  name: office-ingress
+  namespace: udangbetbo
+spec:
+  rules:
+  - host: bo.udangbet.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: office-udangbet
+            port:
+              number: 3000
+        path: /
+        pathType: Prefix
+status:
+  loadBalancer: {}
+  

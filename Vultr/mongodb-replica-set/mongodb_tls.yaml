@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cert-manager-certificate
+spec:
+  secretName: mongodb-tls
+  issuerRef:
+    name: ca-issuer
+    kind: Issuer
+  duration: 87600h
+  commonName: "*.mongodb-svc.mongodb.svc.cluster.local"
+  dnsNames:
+    - "*.mongodb-svc.mongodb.svc.cluster.local"
+    - "mongodb-0.octosplay.com"
+    - "mongodb-1.octosplay.com"
+    - "mongodb-2.octosplay.com"

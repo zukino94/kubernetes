@@ -1,0 +1,10 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: realip
+  namespace: traefik
+spec:
+  plugin:
+    traefik-real-ip:
+      excludednets:
+        - "1.1.1.1/24"

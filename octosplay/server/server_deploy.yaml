@@ -1,0 +1,201 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: server
+---
+apiVersion: v1
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJyZWdpc3RyeS5naXRsYWIuY29tIjp7InVzZXJuYW1lIjoiZ2xwYXQtdnJ0cGRMVG14ZmlMeld5c2VmXzciLCJwYXNzd29yZCI6ImdscGF0LXZydHBkTFRteGZpTHpXeXNlZl83IiwiZW1haWwiOiJ6dWtpbm9zdWtpbm9AZ21haWwuY29tIiwiYXV0aCI6IloyeHdZWFF0ZG5KMGNHUk1WRzE0Wm1sTWVsZDVjMlZtWHpjNloyeHdZWFF0ZG5KMGNHUk1WRzE0Wm1sTWVsZDVjMlZtWHpjPSJ9fX0=
+kind: Secret
+metadata:
+  name: regcred
+  namespace: server
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: serveroctosplay
+  namespace: server
+  labels:
+    udangbet: member
+  annotations:
+    octosplay: server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      server-replica: server
+  template:
+    metadata:
+      name: server-pod
+      labels:
+        server-replica: server
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: octosplayserver
+        image: registry.gitlab.com/octosplay/zukino:serverredis
+        env:
+        - name: APP_NAME
+          value: "Octosplay"
+        - name: APP_ENV
+          value: "production"
+        - name: APP_KEY
+          value: "base64:123456789101245q1vW4fCfzjFZyR5w8cwG5clMHZ1s="
+        - name: APP_DEBUG
+          value: "false"
+        - name: APP_URL
+          value: "http://localhost"
+        #Server Env
+        - name: API_URL
+          value: "https://api.octosplay.com/api"
+        - name: WEEKLY_BONUS_TOKEN
+          value: "aaabbbccc"
+        #Redis Env
+        #- name: REDIS_URL
+        #  value: "rediss://default:AVNS_q9tt1TgyF5K9eGJTbAE@octosplay-redis-do-user-13616716-0.b.db.ondigitalocean.com:25061"
+        - name: REDIS_HOST
+          value: "octosplay-redis-do-user-13616716-0.b.db.ondigitalocean.com"
+        - name: REDIS_PASSWORD
+          value: "AVNS_q9tt1TgyF5K9eGJTbAE"
+        - name: REDIS_PORT
+          value: "25061"
+        #mysql env
+        - name: DB_MEM_HOST
+          value: "octosplay-mysql-do-user-13616716-0.b.db.ondigitalocean.com"
+        - name: DB_MEM_PORT
+          value: "25060"
+        - name: DB_MEM_DATABASE
+          value: "octosplay_client"
+        - name: DB_MEM_USERNAME
+          value: "octosplay"
+        - name: DB_MEM_PASSWORD
+          value: "AVNS_Vvd0cVgwap17PuWWlwb"
+        - name: DB_MAS_HOST
+          value: "octosplay-mysql-do-user-13616716-0.b.db.ondigitalocean.com"
+        - name: DB_MAS_PORT
+          value: "25060"
+        - name: DB_MAS_DATABASE
+          value: "octosplay_master"
+        - name: DB_MAS_USERNAME
+          value: "octosplay"
+        - name: DB_MAS_PASSWORD
+          value: "AVNS_Vvd0cVgwap17PuWWlwb"
+        #mongodb env
+        - name: MONGO_CP_URL
+          value: "mongodb+srv://octosplay:B0C4jPauf6d21357@octosplay-mongodb-e0460298.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=octosplay-mongodb"
+        - name: MONGO_CP_DBN
+          value: "27017"
+        - name: MONGO_LOG_URL
+          value: "mongodb+srv://octosplay:B0C4jPauf6d21357@octosplay-mongodb-e0460298.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=octosplay-mongodb"
+        - name: MONGO_TRX_URL
+          value: "mongodb+srv://octosplay:B0C4jPauf6d21357@octosplay-mongodb-e0460298.mongo.ondigitalocean.com/admin?tls=true&authSource=admin&replicaSet=octosplay-mongodb"
+        - name: MONGO_TRX_DBN
+          value: "transaction_db"
+        - name: MONGO_LOG_DBN
+          value: "logging_db"
+        - name: MONGO_GAME_DBN
+          value: "game_db"
+        # White Label Agent
+        - name: WIN_AGENT
+          value: "octosplayudangbetpro"
+        ports:
+        - containerPort: 9000
+        livenessProbe:
+            exec:
+                command:
+                    - php-fpm-healthcheck
+                    - --listen-queue=10 # fails if there are more than 10 processes waiting in the fpm queue
+                    - --accepted-conn=5000 # fails after fpm has served more than 5k requests, this will force the pod to reset, use with caution
+            initialDelaySeconds: 0
+            periodSeconds: 10
+        readinessProbe:
+            exec:
+                command:
+                    - php-fpm-healthcheck # a simple ping since this means it's ready to handle traffic
+            initialDelaySeconds: 1
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpfpm-server
+  namespace: server
+  labels:
+    server: phpfpm-server
+spec:
+  selector:
+    server-replica: server
+  ports:
+  - port: 9000
+    targetPort: 9000
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: server-prod
+  namespace: server
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: cs1@octosplay.com
+    privateKeySecretRef:
+      name: server-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: server.octosplay.com
+  namespace: server
+spec:
+  secretName: server.octosplay.com-tls
+  issuerRef:
+    name: server-prod
+    kind: ClusterIssuer
+  commonName: server.octosplay.com
+  dnsNames:
+  - server.octosplay.com
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: serverconfig
+  namespace: server
+data:
+  SCRIPT_FILENAME: "/var/www/html/public/index.php"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: server-prod
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: "FCGI"
+    nginx.ingress.kubernetes.io/fastcgi-index: "index.php"
+    nginx.ingress.kubernetes.io/fastcgi-params-configmap: "serverconfig"
+  name: server-ingress
+  namespace: server
+spec:
+  rules:
+  - host: server.octosplay.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: phpfpm-server
+            port:
+              number: 9000
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - server.octosplay.com
+    secretName: server.octosplay.com-tls
+status:
+  loadBalancer: {}

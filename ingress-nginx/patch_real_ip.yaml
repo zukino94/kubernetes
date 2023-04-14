@@ -1,0 +1,5 @@
+metadata:
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+spec:
+  externalTrafficPolicy: Local

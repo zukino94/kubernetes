@@ -1,0 +1,48 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: mongodb-ca-issuer2
+spec:
+  selfSigned: {}
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mongodb-ca-cert2
+spec:
+  isCA: true
+  commonName: mongodb-ca-cert2
+  secretName: mongodb-ca-cert-key-pair2
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: mongodb-ca-issuer2
+    kind: Issuer
+
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: mongodb-issuer2
+spec:
+  ca:
+    secretName: mongodb-ca-cert-key-pair2
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mongodb-cert2
+spec:
+  commonName: '*.mongodb-svc.mongodb.svc.cluster.local'
+  secretName: mongodb-cert-key-pair2
+  dnsNames:
+  - '*.mongodb-svc.mongodb.svc.cluster.local'
+  - 'mongodb-0.octosplay.com'
+  - 'mongodb-1.octosplay.com'
+  - 'mongodb-2.octosplay.com'
+  issuerRef:
+    name: mongodb-issuer2
+    kind: Issuer

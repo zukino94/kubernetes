@@ -1,0 +1,1 @@
+mongosh "mongodb+srv://octosplay:Zuk1n0@mongodb-svc.mongodb.svc.cluster.local/admin?replicaSet=mongodb&ssl=false"
